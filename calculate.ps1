@@ -1,5 +1,4 @@
 
-
 function Get-IngItemData
 {
     Param (
@@ -18,7 +17,7 @@ function Get-IngItemData
 
     Write-Host "[Get-IngItemData] Loading data from $url"
 
-    $data = Invoke-WebRequest $url
+    $data = Invoke-WebRequest $url -Method GET
 
     $receivedData = ConvertFrom-Json -InputObject $data
 
@@ -35,14 +34,16 @@ function Get-IngItemData
     $result
 }
 
-$data = Import-csv -Path ".\..\export.csv" -Delimiter ';'
+ #(New-Object System.Net.WebClient).Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
+
+$data = Import-csv -Path "c:\My\Scripts\export.csv" -Delimiter ';'
 
 $cashOut = 0.0
 $cashIn = 0.0
 $commission = 0.0
 $commissionRate = 0.0039
 $balance = 0.0
-$expectedIncomeRate = 0.05
+$expectedIncomeRate = 0.10
 
 foreach ($item in $data)
 {
@@ -52,17 +53,21 @@ foreach ($item in $data)
 
     if ($itemName.StartsWith("INTL"))
     {
-        $currentOut = ([double]$item."Kurs K") * ([int]$item."Pozycja")
+        $itemsCount = [int]$item."Pozycja"
+
+        $currentOut = ([double]$item."Kurs K") * ($itemsCount)
 
         $resultValues = Get-IngItemData $itemName
 
         $currentCommissionOut = $currentOut * $commissionRate
 
-        $currentIn = $resultValues[0] * ([int]$item."Pozycja")
+        $currentPrice = $resultValues[0]
 
-        $currentCommissionIn = $currentIn * $commissionRate
+        $currentIn = [System.Math]::Round($currentPrice * $itemsCount, 2)
 
-        $currentOutAll = $currentOut + $currentCommissionOut + $currentCommissionIn
+        $currentCommissionIn = [System.Math]::Round($currentIn * $commissionRate, 2)
+
+        $currentOutAll = [System.Math]::Round($currentOut + $currentCommissionOut + $currentCommissionIn, 2)
 
         $currentBalance = $currentIn - $currentOutAll
 
@@ -70,7 +75,9 @@ foreach ($item in $data)
 
         $expectedIncome = $expectedIncomeRate * $currentOutAll
 
-        $toDisplay = "$itemName `t $currentOut `t $currentIn `t $currentBalance `t $balance `t $expectedIncome"
+        $expectedPriceForIncome = [System.Math]::Round(($expectedIncome + $currentOut) / (1 - $commissionRate) / $itemsCount, 2)
+
+        $toDisplay = "$itemName `t $itemsCount `t $currentOut `t $currentIn `t $currentBalance `t $balance `t $expectedIncome `t $expectedPriceForIncome `t $currentPrice"
 
         $selectedColor = $null
 
@@ -101,4 +108,4 @@ foreach ($item in $data)
     {
         # not implemented yet
     }
-}
+}                      
