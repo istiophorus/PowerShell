@@ -36,7 +36,7 @@ function Get-IngItemData
 
  #(New-Object System.Net.WebClient).Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials
 
-$data = Import-csv -Path "c:\My\Scripts\export.csv" -Delimiter ';'
+$data = Import-csv -Path "..\export.csv" -Delimiter ';'
 
 $cashOut = 0.0
 $cashIn = 0.0
